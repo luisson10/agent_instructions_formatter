@@ -39,7 +39,8 @@ export const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
     },
     onUpdate: ({ editor }) => {
       // Al escribir en visual, obtener el Markdown generado
-      const markdown = editor.storage.markdown.getMarkdown();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const markdown = (editor.storage as any).markdown.getMarkdown();
       onChange(markdown);
     },
   });
@@ -49,7 +50,8 @@ export const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
     if (!editor) return;
 
     // Obtenemos el markdown actual del editor
-    const currentEditorMarkdown = editor.storage.markdown.getMarkdown();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const currentEditorMarkdown = (editor.storage as any).markdown.getMarkdown();
 
     // Solo actualizamos si el contenido externo es diferente
     // Esto es crucial para que al cambiar de pestaña "Code" -> "Visual",

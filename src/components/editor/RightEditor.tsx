@@ -18,18 +18,6 @@ export const RightEditor = () => {
     setTimeout(() => setCopyFeedback(false), 2000);
   };
 
-  const handlePasteRevert = async () => {
-      // El usuario quiere pegar algo aquí y que se transforme a la izquierda
-      try {
-          const text = await navigator.clipboard.readText();
-          setSingleLine(text);
-          // Pequeño delay para que el estado se actualice antes de transformar
-          setTimeout(() => transformToMulti(), 0);
-      } catch (err) {
-          console.error("Error leyendo clipboard", err);
-      }
-  };
-
   const handleManualChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       setSingleLine(e.target.value);
   };
