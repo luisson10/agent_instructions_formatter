@@ -25,12 +25,10 @@ export const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
         html: false,
         transformPastedText: true,
         transformCopiedText: true,
-        // Importante: asegurar compatibilidad con GFM (GitHub Flavored Markdown)
         linkify: true,
         breaks: true,
       }),
     ],
-    // Inicializar con el contenido markdown
     content: content, 
     editorProps: {
       attributes: {
@@ -38,43 +36,37 @@ export const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
       },
     },
     onUpdate: ({ editor }) => {
-      // Al escribir en visual, obtener el Markdown generado
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const markdown = (editor.storage as any).markdown.getMarkdown();
       onChange(markdown);
     },
   });
 
-  // Función para insertar formato de variable
   const setVariableFormat = useCallback(() => {
     if (!editor) return;
     
     const { from, to, empty } = editor.state.selection;
-    if (empty) return; // No hacer nada si no hay selección
+    if (empty) return; 
 
     const text = editor.state.doc.textBetween(from, to);
     
-    // Formato solicitado: {{ '\{\{texto\}\}' }} (con backslashes visibles)
-    // Necesitamos escapar los backslashes dobles para que pasen a través del parser de Tiptap
+    // FORMATO CORRECTO SOLICITADO: {{ '\{\{texto\}\}' }}
+    // Para que Markdown preserve los backslashes literales y no los consuma como escape,
+    // debemos escribirlos dobles: \\
+    // JS String: '\\\\' -> Markdown Text: '\\' -> Final Output: '\'
     const formatted = `{{ '\\\\{\\\\{${text}\\\\}\\\\}' }}`;
     
+    // Insertamos como texto plano. 
     editor.chain().focus().insertContent(formatted).run();
   }, [editor]);
 
-  // Efecto para sincronizar cambios externos (ej: cambiar pestaña o undo/redo global)
+  // Efecto para sincronizar cambios externos
   useEffect(() => {
     if (!editor) return;
-
-    // Obtenemos el markdown actual del editor
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const currentEditorMarkdown = (editor.storage as any).markdown.getMarkdown();
 
-    // Solo actualizamos si el contenido externo es diferente
-    // Esto es crucial para que al cambiar de pestaña "Code" -> "Visual",
-    // el visual tome el nuevo markdown y lo renderice como bloques
     if (content !== currentEditorMarkdown) {
-        // setContent en Tiptap con la extensión Markdown habilitada
-        // detectará que es string y usará el parser de markdown para crear los nodos
         editor.commands.setContent(content);
     }
   }, [content, editor]);
@@ -83,7 +75,6 @@ export const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
     return null;
   }
 
-  // Helper para clases de botón activo
   const activeClass = (isActive: boolean) => 
     isActive ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800';
 
@@ -109,13 +100,14 @@ export const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
         >
           <Italic className="w-4 h-4" />
         </Button>
-
+        
+        {/* Botón de Variable */}
         <Button
           variant="ghost"
           size="sm"
           onClick={setVariableFormat}
-          className="h-8 w-8 p-0 text-amber-400 hover:text-amber-300 hover:bg-slate-800"
-          title="Convertir a Variable"
+          className="h-8 w-8 p-0 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/30"
+          title="Convertir a Variable de Función"
         >
           <Braces className="w-4 h-4" />
         </Button>
