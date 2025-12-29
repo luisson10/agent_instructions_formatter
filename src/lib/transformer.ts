@@ -32,6 +32,12 @@ export function toSingleLine(text: string, options: TransformOptions): string {
   // para que al parsearse sea C:\Path.
   result = result.replace(/\\/g, '\\\\');
 
+  // 3.1 EXCEPCIÓN: Funciones de Variable {{ '\{\{... \}\}' }}
+  // El usuario quiere que estas aparezcan con backslash simple en el output final,
+  // no con doble backslash. Revertimos el escape SOLO para este patrón específico.
+  // Buscamos: {{ '\\{\\{...\\}\\}' }} y lo convertimos a {{ '\{\{...\}\}' }}
+  result = result.replace(/{{\s*'\\\\{\\\\{(.+?)\\\\}\\\\}'\s*}}/g, "{{ '\\{\\{$1\\}\\}' }}");
+
   // 4. Convertir saltos de línea reales a literal \n
   result = result.replace(/\n/g, '\\n');
 
