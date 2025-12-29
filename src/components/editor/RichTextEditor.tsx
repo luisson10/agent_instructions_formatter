@@ -3,8 +3,8 @@ import StarterKit from '@tiptap/starter-kit';
 import Typography from '@tiptap/extension-typography';
 import { Markdown } from 'tiptap-markdown';
 import { Button } from '../ui/Button';
-import { Bold, Italic, List, ListOrdered, Heading1, Heading2, Heading3 } from 'lucide-react';
-import { useEffect } from 'react';
+import { Bold, Italic, List, ListOrdered, Heading1, Heading2, Heading3, Braces } from 'lucide-react';
+import { useEffect, useCallback } from 'react';
 import { cn } from '../ui/Button';
 
 interface RichTextEditorProps {
@@ -44,6 +44,22 @@ export const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
       onChange(markdown);
     },
   });
+
+  // Función para insertar formato de variable
+  const setVariableFormat = useCallback(() => {
+    if (!editor) return;
+    
+    const { from, to, empty } = editor.state.selection;
+    if (empty) return; // No hacer nada si no hay selección
+
+    const text = editor.state.doc.textBetween(from, to);
+    
+    // Formato solicitado: {{ '\{\{texto\}\}' }}
+    // Nota: Escapamos las backslashes para que sea un string válido de JS que imprima literales
+    const formatted = `{{ '\\{\\{${text}\\}\\}' }}`;
+    
+    editor.chain().focus().insertContent(formatted).run();
+  }, [editor]);
 
   // Efecto para sincronizar cambios externos (ej: cambiar pestaña o undo/redo global)
   useEffect(() => {
@@ -92,6 +108,16 @@ export const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
           title="Cursiva (Ctrl+I)"
         >
           <Italic className="w-4 h-4" />
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={setVariableFormat}
+          className="h-8 w-8 p-0 text-amber-400 hover:text-amber-300 hover:bg-slate-800"
+          title="Convertir a Variable"
+        >
+          <Braces className="w-4 h-4" />
         </Button>
         
         <div className="w-px h-4 bg-slate-700 mx-2" />
