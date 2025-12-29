@@ -6,6 +6,7 @@ import { Button } from '../ui/Button';
 import { Bold, Italic, List, ListOrdered, Heading1, Heading2, Heading3, Braces } from 'lucide-react';
 import { useEffect, useCallback } from 'react';
 import { cn } from '../ui/Button';
+import { VariableNode } from './extensions/VariableNode';
 
 interface RichTextEditorProps {
   content: string;
@@ -21,6 +22,7 @@ export const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
         },
       }),
       Typography,
+      VariableNode, // Nuestra nueva extensión
       Markdown.configure({
         html: false,
         transformPastedText: true,
@@ -42,32 +44,79 @@ export const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
     },
   });
 
-  const setVariableFormat = useCallback(() => {
+  // Función para hidratar texto plano a nodos de variable
+  // Busca el patrón {{ '\{\{nombre\}\}' }} y lo reemplaza por el nodo
+  const hydrateVariables = useCallback(() => {
+    if (!editor) return;
+    
+    const text = editor.getText();
+    // Regex para encontrar: {{ '\{\{algo\}\}' }}
+    // Explicación: 
+    // {{ \s* '       -> Inicio
+    // \\\{\\\{       -> \{\{ escapado
+    // ([^}]+)        -> Captura el nombre (todo menos })
+    // \\\}\\\}       -> \}\} escapado
+    // ' \s* }}       -> Final
+    const regex = /{{\s*'\\\{\\\{(.+?)\\\}\\\}'\s*}}/g;
+    
+    let match;
+    // Usamos replace con callback para encontrar índices, pero necesitamos operar sobre el JSON doc
+    // Es más seguro recorrer el documento y reemplazar rangos.
+    
+    // Simplificación: Tiptap tiene comandos para buscar y reemplazar, pero son para texto.
+    // Dado que el contenido puede ser mixto, lo mejor es hacerlo al cargar el contenido inicial.
+  }, [editor]);
+
+
+  const insertVariable = useCallback(() => {
     if (!editor) return;
     
     const { from, to, empty } = editor.state.selection;
-    if (empty) return; 
+    let name = 'funcion';
 
-    const text = editor.state.doc.textBetween(from, to);
+    if (!empty) {
+        name = editor.state.doc.textBetween(from, to);
+    } else {
+        // Si no hay selección, pedimos nombre o usamos default
+        // Podríamos abrir un prompt, pero por simplicidad usamos placeholder
+        const promptName = window.prompt("Nombre de la variable:", "");
+        if (promptName) name = promptName;
+        else return; // Cancelado
+    }
     
-    // FORMATO CORRECTO SOLICITADO: {{ '\{\{texto\}\}' }}
-    // Para que Markdown preserve los backslashes literales y no los consuma como escape,
-    // debemos escribirlos dobles: \\
-    // JS String: '\\\\' -> Markdown Text: '\\' -> Final Output: '\'
-    const formatted = `{{ '\\\\{\\\\{${text}\\\\}\\\\}' }}`;
+    editor.chain().focus().insertContent({
+        type: 'variableFunction',
+        attrs: { name }
+    }).run();
     
-    // Insertamos como texto plano. 
-    editor.chain().focus().insertContent(formatted).run();
   }, [editor]);
 
   // Efecto para sincronizar cambios externos
   useEffect(() => {
     if (!editor) return;
+    
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const currentEditorMarkdown = (editor.storage as any).markdown.getMarkdown();
 
     if (content !== currentEditorMarkdown) {
-        editor.commands.setContent(content);
+        // Truco de Hidratación:
+        // Si el contenido entrante tiene el formato de texto {{ '\{\{...\}\}' }},
+        // Lo reemplazamos con un placeholder HTML temporal que nuestra extensión sí entienda,
+        // O usamos insertContent que es inteligente.
+        
+        // Pero como tiptap-markdown no parsea nuestro formato custom automáticamente,
+        // lo más limpio es inyectar el contenido, y luego correr una pasada de reemplazo.
+        
+        // Estrategia: Reemplazo de string crudo antes de setContent.
+        // Convertimos "{{ '\{\{name\}\}' }}" a <span data-type="variable-function" name="name"></span>
+        // Y dejamos que Tiptap parseHTML haga el resto.
+        
+        const hydratedContent = content.replace(
+            /{{\s*'\\\{\\\{(.+?)\\\}\\\}'\s*}}/g, 
+            (_, name) => `<span data-type="variable-function" name="${name}"></span>`
+        );
+        
+        editor.commands.setContent(hydratedContent);
     }
   }, [content, editor]);
 
@@ -105,9 +154,9 @@ export const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={setVariableFormat}
+          onClick={insertVariable}
           className="h-8 w-8 p-0 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/30"
-          title="Convertir a Variable de Función"
+          title="Insertar Función Variable"
         >
           <Braces className="w-4 h-4" />
         </Button>
