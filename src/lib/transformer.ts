@@ -33,10 +33,13 @@ export function toSingleLine(text: string, options: TransformOptions): string {
   result = result.replace(/\\/g, '\\\\');
 
   // 3.1 EXCEPCIÓN: Funciones de Variable {{ '\{\{... \}\}' }}
-  // El usuario quiere que estas aparezcan con backslash simple en el output final,
-  // no con doble backslash. Revertimos el escape SOLO para este patrón específico.
-  // Buscamos: {{ '\\{\\{...\\}\\}' }} y lo convertimos a {{ '\{\{...\}\}' }}
+  // ... (código existente) ...
   result = result.replace(/{{\s*'\\\\{\\\\{(.+?)\\\\}\\\\}'\s*}}/g, "{{ '\\{\\{$1\\}\\}' }}");
+
+  // 3.2 EXCEPCIÓN: Corchetes simples [texto]
+  // Tiptap/Markdown escapan los corchetes como \[texto\]. Nosotros queremos [texto].
+  // Reemplazamos \[ por [ y \] por ]
+  result = result.replace(/\\\[/g, '[').replace(/\\\]/g, ']');
 
   // 4. Convertir saltos de línea reales a literal \n
   result = result.replace(/\n/g, '\\n');
