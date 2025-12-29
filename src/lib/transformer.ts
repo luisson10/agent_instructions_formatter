@@ -33,14 +33,15 @@ export function toSingleLine(text: string, options: TransformOptions): string {
     }).join('');
   }
 
+  // 2.1 CLEANUP: Des-escapar corchetes generados por Markdown (\[ -> [)
+  // Hacemos esto ANTES de escapar backslashes para eliminar el backslash de escape totalmente.
+  result = result.replace(/\\\[/g, '[').replace(/\\\]/g, ']');
+
   // 3. Escapar backslashes existentes
   result = result.replace(/\\/g, '\\\\');
 
   // 3.1 EXCEPCIÓN: Funciones de Variable {{ '\{\{... \}\}' }}
   result = result.replace(/{{\s*'\\\\{\\\\{(.+?)\\\\}\\\\}'\s*}}/g, "{{ '\\{\\{$1\\}\\}' }}");
-
-  // 3.2 EXCEPCIÓN: Corchetes simples [texto]
-  result = result.replace(/\\\[/g, '[').replace(/\\\]/g, ']');
 
   // 4. Convertir saltos de línea reales a literal \n
   result = result.replace(/\n/g, '\\n');
