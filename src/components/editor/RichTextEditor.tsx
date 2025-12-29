@@ -54,9 +54,9 @@ export const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
 
     const text = editor.state.doc.textBetween(from, to);
     
-    // Formato solicitado: {{ '\{\{texto\}\}' }}
-    // Nota: Escapamos las backslashes para que sea un string válido de JS que imprima literales
-    const formatted = `{{ '\\{\\{${text}\\}\\}' }}`;
+    // Formato solicitado: {{ '\{\{texto\}\}' }} (con backslashes visibles)
+    // Necesitamos escapar los backslashes dobles para que pasen a través del parser de Tiptap
+    const formatted = `{{ '\\\\{\\\\{${text}\\\\}\\\\}' }}`;
     
     editor.chain().focus().insertContent(formatted).run();
   }, [editor]);
