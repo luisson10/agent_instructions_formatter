@@ -15,12 +15,14 @@ export function toSingleLine(text: string, options: TransformOptions): string {
   // 1. Normalización de finales de línea (CRLF -> LF) y trim básico
   result = result.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
-  // 1.1 CLEANUP PRE-ESCAPE: Eliminar "Hard Breaks" de Markdown (Shift+Enter)
-  // Markdown representa Shift+Enter como un backslash al final de la línea.
-  // Si no lo quitamos, se convierte en \\n (literal backslash + literal n).
-  // Queremos que sea solo \n.
-  // Regex: Backslash seguido inmediatamente de newline -> newline
+  // 1.1 CLEANUP AGRESIVO: Eliminar escapes de línea innecesarios
+  // Tiptap a veces genera "Hard Breaks" (backslash + newline) donde no se necesitan.
+  // Convertimos " \\\n " (backslash al final de linea) -> "\n" (salto limpio)
+  // Regex: \ (backslash literal) seguido de \n
   result = result.replace(/\\\n/g, '\n');
+  
+  // También limpiamos " \n" (espacio + backslash + n) que a veces ocurre
+  result = result.replace(/[ \t]+\\\n/g, '\n');
 
   // 2. Manejo de espacios (Preservar vs Normalizar)
   if (options.normalizeSpaces) {
