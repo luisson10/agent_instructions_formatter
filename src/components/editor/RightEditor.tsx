@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { Copy, AlertTriangle, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { Copy, AlertTriangle, CheckCircle2, ArrowLeft, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Toggle } from '../ui/Toggle';
-import { validateSingleLine } from '../../lib/transformer';
+import { validateOutputQuality } from '../../lib/transformer';
 import { cn } from '../ui/Button';
 
 export const RightEditor = () => {
   const { singleLine, setSingleLine, options, setOption, transformToMulti } = useAppStore();
   const [copyFeedback, setCopyFeedback] = useState(false);
 
-  const validation = validateSingleLine(singleLine);
+  // Usamos el validador nuevo
+  const validation = validateOutputQuality(singleLine);
   
   const handleCopy = async () => {
     await navigator.clipboard.writeText(singleLine);
@@ -28,7 +29,30 @@ export const RightEditor = () => {
        <div className="flex items-center justify-between p-2 border-b border-slate-800 bg-slate-900/50">
         <div className="flex items-center space-x-1">
           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider px-2">MÁQUINA (SINGLE LINE)</span>
+          
+          {/* Badge de Validación */}
+          {singleLine && (
+            <div className={cn(
+              "flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border",
+              validation.status === 'success' ? "bg-emerald-950/50 border-emerald-800 text-emerald-400" :
+              validation.status === 'warning' ? "bg-amber-950/50 border-amber-800 text-amber-400" :
+              "bg-red-950/50 border-red-800 text-red-400"
+            )}>
+              {validation.status === 'success' ? (
+                <>
+                  <ShieldCheck className="w-3 h-3" />
+                  <span>Válido</span>
+                </>
+              ) : (
+                <>
+                  <ShieldAlert className="w-3 h-3" />
+                  <span>{validation.status === 'error' ? 'Error' : 'Revisar'}</span>
+                </>
+              )}
+            </div>
+          )}
         </div>
+
         <div className="flex items-center space-x-2">
             <Button variant="secondary" size="sm" onClick={transformToMulti} title="Reconstruir Markdown desde este texto">
                 <ArrowLeft className="w-4 h-4 mr-2" />
@@ -38,7 +62,7 @@ export const RightEditor = () => {
                 variant={copyFeedback ? 'primary' : 'secondary'} 
                 size="sm" 
                 onClick={handleCopy}
-                disabled={!singleLine}
+                disabled={!singleLine || validation.status === 'error'}
             >
                 {copyFeedback ? <CheckCircle2 className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
                 {copyFeedback ? '¡Copiado!' : 'Copiar'}
@@ -47,7 +71,7 @@ export const RightEditor = () => {
       </div>
 
       {/* Configuración */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 p-3 bg-slate-800/30 border-b border-slate-800">
+      <div className="flex items-center gap-4 p-3 bg-slate-800/30 border-b border-slate-800">
         <Toggle 
             id="opt-normalize"
             checked={options.normalizeSpaces} 
@@ -60,19 +84,17 @@ export const RightEditor = () => {
             onCheckedChange={(v) => setOption('wrapInQuotes', v)} 
             label='Envolver en "' 
         />
-        <Toggle 
-            id="opt-escape"
-            checked={options.escapeInternalQuotes} 
-            onCheckedChange={(v) => setOption('escapeInternalQuotes', v)} 
-            label='Escapar " internas' 
-        />
+        {/* Toggle de escape interno eliminado a petición. Asumimos siempre true o default del transformer. */}
       </div>
 
-      {/* Error Indicator */}
-      {!validation.valid && (
-          <div className="bg-red-900/20 border-l-4 border-red-500 p-2 flex items-center gap-2 text-xs text-red-200">
+      {/* Mensaje de Error/Warning Detallado */}
+      {validation.status !== 'success' && singleLine && (
+          <div className={cn(
+            "border-l-4 p-2 flex items-center gap-2 text-xs",
+            validation.status === 'error' ? "bg-red-900/20 border-red-500 text-red-200" : "bg-amber-900/20 border-amber-500 text-amber-200"
+          )}>
               <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-              <span>{validation.error}</span>
+              <span>{validation.message}</span>
           </div>
       )}
 
@@ -81,7 +103,8 @@ export const RightEditor = () => {
         <textarea
             className={cn(
                 "w-full h-full bg-[#0d1117] text-green-400 p-4 resize-none outline-none font-mono text-sm leading-relaxed whitespace-pre-wrap break-all",
-                !validation.valid && "ring-2 ring-inset ring-red-500/20"
+                validation.status === 'error' && "ring-2 ring-inset ring-red-500/20",
+                validation.status === 'warning' && "ring-2 ring-inset ring-amber-500/20"
             )}
             placeholder='El resultado "single line" aparecerá aquí...'
             value={singleLine}
@@ -92,10 +115,8 @@ export const RightEditor = () => {
       {/* Footer Info */}
       <div className="flex items-center justify-between px-3 py-1 bg-slate-950 text-[10px] text-slate-500 border-t border-slate-800">
         <span>Caracteres: {singleLine.length}</span>
-        {/* En single line, tokens son similares, pero escapes pueden aumentar count */}
         <span>Tokens aprox: {Math.ceil(singleLine.length / 4)}</span>
       </div>
     </div>
   );
 };
-
