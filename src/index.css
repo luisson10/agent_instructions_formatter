@@ -14,34 +14,45 @@ body {
 
 /* --- ESTILOS DE LISTA ANIDADA JERÁRQUICA (1. -> 1.1 -> 1.1.1) --- */
 
-/* Resetear el contador en cada nueva lista ordenada raíz o anidada */
+/* 1. Configuramos el contador en el elemento raíz de la lista */
 .ProseMirror ol {
-  list-style-type: none; /* Quitamos los números por defecto */
-  counter-reset: item;
-  padding-left: 0; /* Controlamos el padding manualmente */
+  counter-reset: section;
+  list-style-type: none;
+  padding-left: 0;
 }
 
-/* Cada elemento de lista incrementa el contador */
+/* 2. Cada item incrementa el contador y muestra el número */
 .ProseMirror ol > li {
-  display: block; /* Para que el ::before funcione bien */
-  counter-increment: item;
+  counter-increment: section;
   position: relative;
-  padding-left: 2.5em; /* Espacio para el número */
+  display: block;
 }
 
-/* El marcador (número) */
+/* 3. El pseudo-elemento ::before muestra el contador acumulado (ej: 1.1.) */
 .ProseMirror ol > li::before {
-  content: counters(item, ".") ". "; /* Magia: 1.1.1. */
+  content: counters(section, ".") ". ";
   position: absolute;
-  left: 0;
-  top: 0;
-  font-weight: bold;
+  left: -1em; /* Ajuste visual para sacarlo un poco a la izquierda */
+  font-weight: 600;
   color: #94a3b8; /* Slate 400 */
+  /* Importante: aseguramos que el ancho sea fijo para alineación */
+  min-width: 2em; 
+  text-align: right;
+  padding-right: 0.5em;
 }
 
-/* Ajuste para listas anidadas: Resetear contador en el padre para que el hijo empiece fresco */
+/* 4. Manejo del anidamiento */
+/* Cuando hay una lista DENTRO de un li, reseteamos un NUEVO contador para ese nivel */
 .ProseMirror li > ol {
-  margin-top: 0.5em;
-  margin-bottom: 0.5em;
-  padding-left: 1em; /* Indentación visual del bloque hijo */
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+  padding-left: 2em; /* Indentación visual para el hijo */
+  counter-reset: section; /* Reiniciamos 'section' para el nuevo scope */
+}
+
+/* 5. Ajuste fino para el contenido del li para que no choque con el número */
+.ProseMirror li > p {
+  display: inline-block;
+  margin: 0;
+  vertical-align: top;
 }
