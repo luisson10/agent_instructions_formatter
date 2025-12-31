@@ -12,34 +12,36 @@ body {
     color: #f8fafc; /* Slate 50 */
 }
 
-/* Fallback manual por si acaso el plugin falla en cargar estilos específicos */
-.ProseMirror ul {
-  list-style-type: disc;
-  padding-left: 1.5em;
-}
+/* --- ESTILOS DE LISTA ANIDADA JERÁRQUICA (1. -> 1.1 -> 1.1.1) --- */
 
+/* Resetear el contador en cada nueva lista ordenada raíz o anidada */
 .ProseMirror ol {
-  list-style-type: decimal;
-  padding-left: 1.5em;
+  list-style-type: none; /* Quitamos los números por defecto */
+  counter-reset: item;
+  padding-left: 0; /* Controlamos el padding manualmente */
 }
 
-.ProseMirror h1 {
-  font-size: 2em;
-  font-weight: bold;
-  margin-top: 0.5em;
-  margin-bottom: 0.5em;
+/* Cada elemento de lista incrementa el contador */
+.ProseMirror ol > li {
+  display: block; /* Para que el ::before funcione bien */
+  counter-increment: item;
+  position: relative;
+  padding-left: 2.5em; /* Espacio para el número */
 }
 
-.ProseMirror h2 {
-  font-size: 1.5em;
+/* El marcador (número) */
+.ProseMirror ol > li::before {
+  content: counters(item, ".") ". "; /* Magia: 1.1.1. */
+  position: absolute;
+  left: 0;
+  top: 0;
   font-weight: bold;
-  margin-top: 0.5em;
-  margin-bottom: 0.5em;
+  color: #94a3b8; /* Slate 400 */
 }
 
-.ProseMirror h3 {
-  font-size: 1.25em;
-  font-weight: bold;
+/* Ajuste para listas anidadas: Resetear contador en el padre para que el hijo empiece fresco */
+.ProseMirror li > ol {
   margin-top: 0.5em;
   margin-bottom: 0.5em;
+  padding-left: 1em; /* Indentación visual del bloque hijo */
 }
