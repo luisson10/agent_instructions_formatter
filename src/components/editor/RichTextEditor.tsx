@@ -24,7 +24,7 @@ export const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
       Typography,
       VariableNode, // Nuestra nueva extensión
       Markdown.configure({
-        html: false,
+        html: true,
         transformPastedText: true,
         transformCopiedText: true,
         linkify: true,
@@ -44,28 +44,6 @@ export const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
     },
   });
 
-  // Función para hidratar texto plano a nodos de variable
-  // Busca el patrón {{ '\{\{nombre\}\}' }} y lo reemplaza por el nodo
-  const hydrateVariables = useCallback(() => {
-    if (!editor) return;
-    
-    const text = editor.getText();
-    // Regex para encontrar: {{ '\{\{algo\}\}' }}
-    // Explicación: 
-    // {{ \s* '       -> Inicio
-    // \\\{\\\{       -> \{\{ escapado
-    // ([^}]+)        -> Captura el nombre (todo menos })
-    // \\\}\\\}       -> \}\} escapado
-    // ' \s* }}       -> Final
-    const regex = /{{\s*'\\\{\\\{(.+?)\\\}\\\}'\s*}}/g;
-    
-    let match;
-    // Usamos replace con callback para encontrar índices, pero necesitamos operar sobre el JSON doc
-    // Es más seguro recorrer el documento y reemplazar rangos.
-    
-    // Simplificación: Tiptap tiene comandos para buscar y reemplazar, pero son para texto.
-    // Dado que el contenido puede ser mixto, lo mejor es hacerlo al cargar el contenido inicial.
-  }, [editor]);
 
 
   const insertVariable = useCallback(() => {

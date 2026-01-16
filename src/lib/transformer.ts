@@ -75,6 +75,28 @@ function processHierarchicalLists(text: string): string {
     return resultLines.join('\n');
 }
 
+/**
+ * Convierte numeración jerárquica explícita (ej: 1.2.3.) a listas anidadas Markdown.
+ * Esto ayuda al editor visual a reconstruir correctamente las listas.
+ */
+function normalizeHierarchicalNumbering(text: string): string {
+    const lines = text.split('\n');
+    const converted = lines.map((line) => {
+        const match = line.match(/^\s*(\d+(?:\.\d+)+)\.\s+(.*)$/);
+        if (!match) return line;
+
+        const numbering = match[1];
+        const content = match[2];
+        const depth = numbering.split('.').length;
+        const indent = ' '.repeat((depth - 1) * 2);
+
+        // Markdown acepta "1." repetido para listas ordenadas.
+        return `${indent}1. ${content}`;
+    });
+
+    return converted.join('\n');
+}
+
 
 /**
  * Transforma texto Markdown multilinea a una sola línea lista para JSON/System Prompt.
@@ -148,6 +170,9 @@ export function toMultiLine(text: string, options: TransformOptions): string {
 
   result = result.replace(/\\n/g, '\n');
   result = result.replace(/\\\\/g, '\\');
+
+  // 3. Normalizar numeración jerárquica a listas Markdown anidadas
+  result = normalizeHierarchicalNumbering(result);
 
   return result;
 }
