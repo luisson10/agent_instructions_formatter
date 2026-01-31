@@ -59,6 +59,40 @@ describe('Transformer Logic', () => {
       // 3. Wrap -> "..."
       expect(output).toBe('"Line 1\\nLine \\"2\\""');
     });
+
+    it('builds hierarchical numbering from indented lists', () => {
+      const input = [
+        '1. Parent',
+        '    1. Child',
+        '        1. Grandchild',
+        '    1. Sibling'
+      ].join('\n');
+      const output = toSingleLine(input, defaultOptions);
+      expect(output).toBe(
+        '1. Parent\\n    1.1. Child\\n        1.1.1. Grandchild\\n    1.2. Sibling'
+      );
+    });
+
+    it('preserves explicit list numbers when provided', () => {
+      const input = [
+        '2. Top',
+        '  3. Child',
+        '    4. Grandchild'
+      ].join('\n');
+      const output = toSingleLine(input, defaultOptions);
+      expect(output).toBe('2. Top\\n  2.3. Child\\n    2.3.4. Grandchild');
+    });
+
+    it('preserves hierarchical numbering when already explicit', () => {
+      const input = [
+        '1. Parent',
+        '1.1. Child',
+        '1.1.1. Grandchild',
+        '1.1.2. Sibling'
+      ].join('\n');
+      const output = toSingleLine(input, defaultOptions);
+      expect(output).toBe('1. Parent\\n1.1. Child\\n1.1.1. Grandchild\\n1.1.2. Sibling');
+    });
   });
 
   describe('toMultiLine', () => {
@@ -92,6 +126,35 @@ describe('Transformer Logic', () => {
         const output = toMultiLine(input, defaultOptions);
         expect(output).toBe('C:\\Path');
     });
+
+    it('converts hierarchical numbering into nested ordered lists', () => {
+      const input = [
+        '1. Parent',
+        '1.2. Child',
+        '1.2.1. Grandchild'
+      ].join('\n');
+      const output = toMultiLine(input, defaultOptions);
+      expect(output).toBe('1. Parent\n1.2. Child\n1.2.1. Grandchild');
+    });
+
+    it('removes blank lines between nested list items', () => {
+      const input = [
+        '1. Parent',
+        '',
+        '1.1. Child',
+        '',
+        '1.1.1. Grandchild',
+        '',
+        '2. Next Parent'
+      ].join('\n');
+      const output = toMultiLine(input, defaultOptions);
+      expect(output).toBe('1. Parent\n1.1. Child\n1.1.1. Grandchild\n2. Next Parent');
+    });
+
+    it('keeps explicit list numbers in nested reconstruction', () => {
+      const input = '2.3.4. Deep item';
+      const output = toMultiLine(input, defaultOptions);
+      expect(output).toBe('2.3.4. Deep item');
+    });
   });
 });
-

@@ -7,6 +7,7 @@ import { Bold, Italic, List, ListOrdered, Heading1, Heading2, Heading3, Braces }
 import { useEffect, useCallback } from 'react';
 import { cn } from '../ui/Button';
 import { VariableNode } from './extensions/VariableNode';
+import { normalizeHierarchicalNumbering, toHierarchicalMarkdown } from '../../lib/transformer';
 
 interface RichTextEditorProps {
   content: string;
@@ -40,7 +41,8 @@ export const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
     onUpdate: ({ editor }) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const markdown = (editor.storage as any).markdown.getMarkdown();
-      onChange(markdown);
+      const normalizedMarkdown = toHierarchicalMarkdown(markdown);
+      onChange(normalizedMarkdown);
     },
   });
 
@@ -75,8 +77,9 @@ export const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
     
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const currentEditorMarkdown = (editor.storage as any).markdown.getMarkdown();
+    const normalizedCurrent = toHierarchicalMarkdown(currentEditorMarkdown);
 
-    if (content !== currentEditorMarkdown) {
+    if (content !== normalizedCurrent) {
         // Truco de Hidratación:
         // Si el contenido entrante tiene el formato de texto {{ '\{\{...\}\}' }},
         // Lo reemplazamos con un placeholder HTML temporal que nuestra extensión sí entienda,
@@ -89,7 +92,8 @@ export const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
         // Convertimos "{{ '\{\{name\}\}' }}" a <span data-type="variable-function" name="name"></span>
         // Y dejamos que Tiptap parseHTML haga el resto.
         
-        const hydratedContent = content.replace(
+        const normalizedForEditor = normalizeHierarchicalNumbering(content);
+        const hydratedContent = normalizedForEditor.replace(
             /{{\s*'\\\{\\\{(.+?)\\\}\\\}'\s*}}/g, 
             (_, name) => `<span data-type="variable-function" name="${name}"></span>`
         );
