@@ -15,23 +15,7 @@ export const VariableMark = Mark.create({
   renderHTML({ HTMLAttributes }) {
     return ['span', mergeAttributes(HTMLAttributes, { 'data-variable': '' }), 0]
   },
-
-  // Añadir comandos para aplicar/quitar
-  addCommands() {
-    return {
-      setVariable: () => ({ commands }) => {
-        return commands.setMark(this.name)
-      },
-      toggleVariable: () => ({ commands }) => {
-        return commands.toggleMark(this.name)
-      },
-      unsetVariable: () => ({ commands }) => {
-        return commands.unsetMark(this.name)
-      },
-    }
-  },
 });
-
 
 
 

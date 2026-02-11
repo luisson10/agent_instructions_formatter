@@ -68,20 +68,22 @@ To preview the build locally:
 npm run preview
 ```
 
+To run the production server locally (same startup Railway uses):
+```bash
+npm run build
+npm start
+```
+
 ## ☁️ Despliegue en Railway
 
-Este proyecto está configurado para ser desplegado fácilmente en [Railway](https://railway.app/).
+Este proyecto está configurado para desplegar con el flujo estándar de Railway (Nixpacks + npm), sin Docker.
 
-### Opción A: Despliegue Automático (Recomendado)
 1. Sube este código a GitHub.
 2. Crea un nuevo proyecto en Railway y selecciona "Deploy from GitHub repo".
-3. Railway detectará automáticamente que es un proyecto Vite y configurará el build.
-4. Si necesitas configuración manual, el `Dockerfile` incluido asegura un entorno consistente usando Nginx.
-
-### Opción B: Uso del Dockerfile
-El repositorio incluye un `Dockerfile` multi-stage optimizado.
-1. En Railway, asegúrate de que el despliegue apunte al `Dockerfile`.
-2. Railway construirá la imagen y expondrá el puerto 80 automáticamente.
+3. Railway usará `railway.json` para ejecutar:
+   - Build: `npm run build`
+   - Start: `npm start`
+4. Railway inyecta `PORT` automáticamente y el servidor de producción (`server.js`) lo respeta.
 
 ## 🔧 Estructura del Proyecto
 
