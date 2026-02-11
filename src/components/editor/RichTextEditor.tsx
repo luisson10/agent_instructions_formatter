@@ -12,9 +12,11 @@ import { normalizeHierarchicalNumbering, toHierarchicalMarkdown } from '../../li
 interface RichTextEditorProps {
   content: string;
   onChange: (markdown: string) => void;
+  onUndo: () => void;
+  onRedo: () => void;
 }
 
-export const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
+export const RichTextEditor = ({ content, onChange, onUndo, onRedo }: RichTextEditorProps) => {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -36,6 +38,25 @@ export const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
     editorProps: {
       attributes: {
         class: 'prose prose-invert prose-slate prose-sm max-w-none focus:outline-none min-h-[500px] p-4',
+      },
+      handleKeyDown: (_view, event) => {
+        const key = event.key.toLowerCase();
+        const isMod = event.metaKey || event.ctrlKey;
+
+        if (isMod && key === 'z') {
+          event.preventDefault();
+          if (event.shiftKey) onRedo();
+          else onUndo();
+          return true;
+        }
+
+        if (isMod && key === 'y') {
+          event.preventDefault();
+          onRedo();
+          return true;
+        }
+
+        return false;
       },
     },
     onUpdate: ({ editor }) => {

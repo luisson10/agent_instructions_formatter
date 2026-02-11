@@ -270,11 +270,19 @@ export function validateOutputQuality(text: string): { status: 'success' | 'warn
     if (/\n/.test(text)) {
         return { status: 'error', message: "Saltos de línea reales detectados" };
     }
-    if (/\\\\\\n/.test(text)) {
-        return { status: 'warning', message: "Posible escape roto: \\\\\\n detectado" };
-    }
-    if (/\\n\\/.test(text)) {
-        return { status: 'warning', message: "Posible escape roto: \\n\\ detectado" };
+
+    const sanitized = text.replace(/{{\s*'\\\{\\\{[\s\S]+?\\\}\\\}'\s*}}/g, '{{VAR}}');
+
+    for (let i = 0; i < sanitized.length; i++) {
+        if (sanitized[i] !== '\\') continue;
+        const next = sanitized[i + 1];
+        if (!next) {
+            return { status: 'warning', message: "Escape inválido: \\ al final" };
+        }
+        if (next !== 'n') {
+            return { status: 'warning', message: `Escape inválido: \\${next}` };
+        }
+        i += 1;
     }
 
     return { status: 'success' };

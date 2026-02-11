@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { Undo, Redo, Trash2, Code2, FileText } from 'lucide-react';
 import { Button } from '../ui/Button';
@@ -7,6 +7,8 @@ import { RichTextEditor } from './RichTextEditor';
 export const LeftEditor = () => {
   const { markdown, setMarkdown, undo, redo, clear, historyIndex, history } = useAppStore();
   const [mode, setMode] = React.useState<'code' | 'visual'>('code');
+  const commitTimer = useRef<number | null>(null);
+  const lastCommitted = useRef(markdown);
 
   const canUndo = historyIndex > 0;
   const canRedo = historyIndex < history.length - 1;
@@ -17,7 +19,41 @@ export const LeftEditor = () => {
   // Para performance, el RichEditor hace debounce interno o Tiptap es eficiente.
   const handleVisualChange = (newMarkdown: string) => {
      setMarkdown(newMarkdown, false); // No history push on every char to avoid spam
+     if (commitTimer.current) window.clearTimeout(commitTimer.current);
+     commitTimer.current = window.setTimeout(() => {
+        if (newMarkdown !== lastCommitted.current) {
+          setMarkdown(newMarkdown, true);
+          lastCommitted.current = newMarkdown;
+        }
+     }, 600);
   };
+
+  const handleUndoRedoKey = (e: React.KeyboardEvent) => {
+    const key = e.key.toLowerCase();
+    const isMod = e.metaKey || e.ctrlKey;
+    if (!isMod) return;
+
+    if (key === 'z') {
+      e.preventDefault();
+      if (e.shiftKey) redo();
+      else undo();
+      return;
+    }
+    if (key === 'y') {
+      e.preventDefault();
+      redo();
+    }
+  };
+
+  useEffect(() => {
+    lastCommitted.current = markdown;
+  }, [historyIndex, markdown]);
+
+  useEffect(() => {
+    return () => {
+      if (commitTimer.current) window.clearTimeout(commitTimer.current);
+    };
+  }, []);
 
   return (
     <div className="flex flex-col h-full bg-slate-900 border-r border-slate-800">
@@ -64,7 +100,9 @@ export const LeftEditor = () => {
           <RichTextEditor 
             key={historyIndex} 
             content={markdown} 
-            onChange={handleVisualChange} 
+            onChange={handleVisualChange}
+            onUndo={undo}
+            onRedo={redo}
           />
         ) : (
           <textarea
@@ -72,6 +110,7 @@ export const LeftEditor = () => {
             placeholder="Escribe tus instrucciones aquí (soporta Markdown)..."
             value={markdown}
             onChange={(e) => setMarkdown(e.target.value)}
+            onKeyDown={handleUndoRedoKey}
           />
         )}
       </div>
