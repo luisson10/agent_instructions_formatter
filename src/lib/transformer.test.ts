@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toSingleLine, toMultiLine } from './transformer';
+import { keepOnlyNewlineEscapes, toSingleLine, toMultiLine } from './transformer';
 import type { TransformOptions } from './transformer';
 
 const defaultOptions: TransformOptions = {
@@ -9,6 +9,20 @@ const defaultOptions: TransformOptions = {
 };
 
 describe('Transformer Logic', () => {
+  describe('keepOnlyNewlineEscapes', () => {
+    it('keeps only \\n escapes and removes other backslash escapes', () => {
+      const input = 'line\\nvalue\\tpath\\\\name\\q';
+      const output = keepOnlyNewlineEscapes(input);
+      expect(output).toBe('line\\nvaluetpath\\nameq');
+    });
+
+    it('preserves variable tokens while cleaning other escapes', () => {
+      const input = "{{ '\\{\\{direccion_cliente\\}\\}' }}\\tEND\\nNEXT";
+      const output = keepOnlyNewlineEscapes(input);
+      expect(output).toBe("{{ '\\{\\{direccion_cliente\\}\\}' }}tEND\\nNEXT");
+    });
+  });
+
   describe('toSingleLine', () => {
     it('converts newlines to literal \\n', () => {
       const input = 'Hello\nWorld';
@@ -93,6 +107,12 @@ describe('Transformer Logic', () => {
       const output = toSingleLine(input, defaultOptions);
       expect(output).toBe('1. Parent\\n1.1. Child\\n1.1.1. Grandchild\\n1.1.2. Sibling');
     });
+
+    it('does not double-escape markdown bracket escapes', () => {
+      const input = 'Texto con \\] y \\[';
+      const output = toSingleLine(input, defaultOptions);
+      expect(output).toBe('Texto con ] y [');
+    });
   });
 
   describe('toMultiLine', () => {
@@ -137,7 +157,7 @@ describe('Transformer Logic', () => {
       expect(output).toBe('1. Parent\n1.2. Child\n1.2.1. Grandchild');
     });
 
-    it('removes blank lines between nested list items', () => {
+    it('preserves blank lines between nested list items', () => {
       const input = [
         '1. Parent',
         '',
@@ -148,7 +168,7 @@ describe('Transformer Logic', () => {
         '2. Next Parent'
       ].join('\n');
       const output = toMultiLine(input, defaultOptions);
-      expect(output).toBe('1. Parent\n1.1. Child\n1.1.1. Grandchild\n2. Next Parent');
+      expect(output).toBe('1. Parent\n\n1.1. Child\n\n1.1.1. Grandchild\n\n2. Next Parent');
     });
 
     it('keeps explicit list numbers in nested reconstruction', () => {

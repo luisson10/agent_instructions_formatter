@@ -7,7 +7,7 @@ import { validateOutputQuality } from '../../lib/transformer';
 import { cn } from '../ui/Button';
 
 export const RightEditor = () => {
-  const { singleLine, setSingleLine, options, setOption, transformToMulti } = useAppStore();
+  const { singleLine, setSingleLine, applySingleLineInput, options, setOption, transformToMulti } = useAppStore();
   const [copyFeedback, setCopyFeedback] = useState(false);
 
   // Usamos el validador nuevo
@@ -21,6 +21,13 @@ export const RightEditor = () => {
 
   const handleManualChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       setSingleLine(e.target.value);
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const pastedText = e.clipboardData.getData('text');
+    if (!pastedText) return;
+    e.preventDefault();
+    applySingleLineInput(pastedText);
   };
 
   return (
@@ -109,6 +116,7 @@ export const RightEditor = () => {
             placeholder='El resultado "single line" aparecerá aquí...'
             value={singleLine}
             onChange={handleManualChange}
+            onPaste={handlePaste}
         />
       </div>
 

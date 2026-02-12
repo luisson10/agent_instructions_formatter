@@ -1,12 +1,11 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { Undo, Redo, Trash2, Code2, FileText } from 'lucide-react';
+import { Undo, Redo, Trash2, FileText } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { RichTextEditor } from './RichTextEditor';
 
 export const LeftEditor = () => {
   const { markdown, setMarkdown, undo, redo, clear, historyIndex, history } = useAppStore();
-  const [mode, setMode] = React.useState<'code' | 'visual'>('code');
   const commitTimer = useRef<number | null>(null);
   const lastCommitted = useRef(markdown);
 
@@ -28,23 +27,6 @@ export const LeftEditor = () => {
      }, 600);
   };
 
-  const handleUndoRedoKey = (e: React.KeyboardEvent) => {
-    const key = e.key.toLowerCase();
-    const isMod = e.metaKey || e.ctrlKey;
-    if (!isMod) return;
-
-    if (key === 'z') {
-      e.preventDefault();
-      if (e.shiftKey) redo();
-      else undo();
-      return;
-    }
-    if (key === 'y') {
-      e.preventDefault();
-      redo();
-    }
-  };
-
   useEffect(() => {
     lastCommitted.current = markdown;
   }, [historyIndex, markdown]);
@@ -60,21 +42,9 @@ export const LeftEditor = () => {
       {/* Toolbar Izquierda */}
       <div className="flex items-center justify-between p-2 border-b border-slate-800 bg-slate-900/50">
         <div className="flex items-center space-x-2">
-          <div className="flex bg-slate-800 rounded-lg p-0.5 border border-slate-700">
-             <button 
-                onClick={() => setMode('code')}
-                className={`px-3 py-1 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${mode === 'code' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
-             >
-                <Code2 className="w-3.5 h-3.5" />
-                Markdown
-             </button>
-             <button 
-                onClick={() => setMode('visual')}
-                className={`px-3 py-1 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${mode === 'visual' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
-             >
-                <FileText className="w-3.5 h-3.5" />
-                Visual
-             </button>
+          <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-slate-400 px-2">
+            <FileText className="w-3.5 h-3.5" />
+            <span>Humano (visual)</span>
           </div>
         </div>
         
@@ -94,25 +64,13 @@ export const LeftEditor = () => {
 
       {/* Área de Edición */}
       <div className="flex-1 overflow-hidden relative">
-        {mode === 'visual' ? (
-           // key={markdown} fuerza el re-render si cambia externamente (ej: undo/redo)
-           // para sincronizar el contenido inicial.
-          <RichTextEditor 
-            key={historyIndex} 
-            content={markdown} 
-            onChange={handleVisualChange}
-            onUndo={undo}
-            onRedo={redo}
-          />
-        ) : (
-          <textarea
-            className="w-full h-full bg-slate-900 text-slate-100 p-4 resize-none outline-none font-mono text-sm leading-relaxed"
-            placeholder="Escribe tus instrucciones aquí (soporta Markdown)..."
-            value={markdown}
-            onChange={(e) => setMarkdown(e.target.value)}
-            onKeyDown={handleUndoRedoKey}
-          />
-        )}
+        <RichTextEditor 
+          key={historyIndex} 
+          content={markdown} 
+          onChange={handleVisualChange}
+          onUndo={undo}
+          onRedo={redo}
+        />
       </div>
       
       {/* Footer Info */}

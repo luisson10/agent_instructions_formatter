@@ -4,7 +4,7 @@ import Typography from '@tiptap/extension-typography';
 import { Markdown } from 'tiptap-markdown';
 import { Button } from '../ui/Button';
 import { Bold, Italic, List, ListOrdered, Heading1, Heading2, Heading3, Braces } from 'lucide-react';
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { cn } from '../ui/Button';
 import { VariableNode } from './extensions/VariableNode';
 import { normalizeHierarchicalNumbering, toHierarchicalMarkdown } from '../../lib/transformer';
@@ -17,6 +17,7 @@ interface RichTextEditorProps {
 }
 
 export const RichTextEditor = ({ content, onChange, onUndo, onRedo }: RichTextEditorProps) => {
+  const isApplyingExternalUpdate = useRef(false);
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -60,6 +61,7 @@ export const RichTextEditor = ({ content, onChange, onUndo, onRedo }: RichTextEd
       },
     },
     onUpdate: ({ editor }) => {
+      if (isApplyingExternalUpdate.current) return;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const markdown = (editor.storage as any).markdown.getMarkdown();
       const normalizedMarkdown = toHierarchicalMarkdown(markdown);
@@ -99,8 +101,9 @@ export const RichTextEditor = ({ content, onChange, onUndo, onRedo }: RichTextEd
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const currentEditorMarkdown = (editor.storage as any).markdown.getMarkdown();
     const normalizedCurrent = toHierarchicalMarkdown(currentEditorMarkdown);
+    const normalizedIncoming = toHierarchicalMarkdown(content);
 
-    if (content !== normalizedCurrent) {
+    if (normalizedIncoming !== normalizedCurrent) {
         // Truco de Hidratación:
         // Si el contenido entrante tiene el formato de texto {{ '\{\{...\}\}' }},
         // Lo reemplazamos con un placeholder HTML temporal que nuestra extensión sí entienda,
@@ -113,13 +116,17 @@ export const RichTextEditor = ({ content, onChange, onUndo, onRedo }: RichTextEd
         // Convertimos "{{ '\{\{name\}\}' }}" a <span data-type="variable-function" name="name"></span>
         // Y dejamos que Tiptap parseHTML haga el resto.
         
-        const normalizedForEditor = normalizeHierarchicalNumbering(content);
+        const normalizedForEditor = normalizeHierarchicalNumbering(normalizedIncoming);
         const hydratedContent = normalizedForEditor.replace(
             /{{\s*'\\\{\\\{(.+?)\\\}\\\}'\s*}}/g, 
             (_, name) => `<span data-type="variable-function" name="${name}"></span>`
         );
-        
+
+        isApplyingExternalUpdate.current = true;
         editor.commands.setContent(hydratedContent);
+        queueMicrotask(() => {
+          isApplyingExternalUpdate.current = false;
+        });
     }
   }, [content, editor]);
 

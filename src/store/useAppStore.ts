@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { toSingleLine, toMultiLine } from '../lib/transformer';
+import { keepOnlyNewlineEscapes, toSingleLine, toMultiLine } from '../lib/transformer';
 import type { TransformOptions } from '../lib/transformer';
 
 interface AppState {
@@ -15,6 +15,7 @@ interface AppState {
   // Actions
   setMarkdown: (text: string, pushToHistory?: boolean) => void;
   setSingleLine: (text: string) => void;
+  applySingleLineInput: (text: string) => void;
   setOption: (key: keyof TransformOptions, value: boolean) => void;
   
   transformToSingle: () => void;
@@ -69,6 +70,24 @@ export const useAppStore = create<AppState>()(
         // pero sí permitimos "pegar y transformar" mediante un botón o acción explicita en la UI.
       },
 
+      applySingleLineInput: (text) => {
+        const { options, history, historyIndex } = get();
+        const sanitizedInput = keepOnlyNewlineEscapes(text);
+        const nextMarkdown = toMultiLine(sanitizedInput, options);
+        const nextSingleLine = toSingleLine(nextMarkdown, options);
+
+        const newHistory = history.slice(0, historyIndex + 1);
+        newHistory.push(nextMarkdown);
+        if (newHistory.length > MAX_HISTORY) newHistory.shift();
+
+        set({
+          markdown: nextMarkdown,
+          singleLine: nextSingleLine,
+          history: newHistory,
+          historyIndex: newHistory.length - 1,
+        });
+      },
+
       setOption: (key, value) => {
         set((state) => ({
           options: { ...state.options, [key]: value }
@@ -85,7 +104,8 @@ export const useAppStore = create<AppState>()(
 
       transformToMulti: () => {
         const { singleLine, options } = get();
-        const result = toMultiLine(singleLine, options);
+        const sanitizedInput = keepOnlyNewlineEscapes(singleLine);
+        const result = toMultiLine(sanitizedInput, options);
         get().setMarkdown(result, true);
       },
 
@@ -129,4 +149,3 @@ export const useAppStore = create<AppState>()(
     }
   )
 );
-
