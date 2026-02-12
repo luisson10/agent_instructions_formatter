@@ -113,6 +113,12 @@ describe('Transformer Logic', () => {
       const output = toSingleLine(input, defaultOptions);
       expect(output).toBe('Texto con ] y [');
     });
+
+    it('normalizes markdown hard-breaks to a single \\n', () => {
+      const input = 'Linea 1\\\nLinea 2';
+      const output = toSingleLine(input, defaultOptions);
+      expect(output).toBe('Linea 1\\nLinea 2');
+    });
   });
 
   describe('toMultiLine', () => {

@@ -212,6 +212,8 @@ export function toSingleLine(text: string, options: TransformOptions): string {
 
   // 1. Normalización de finales de línea (CRLF -> LF) y trim básico
   result = result.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  // Normaliza hard-break markdown (backslash + newline, típico de Shift+Enter) a salto simple.
+  result = result.replace(/\\\n/g, '\n');
 
   // 1.1 PROCESAMIENTO DE LISTAS JERÁRQUICAS
   // Antes de compactar, reescribimos los números "1." por "1.1.", "1.2.", etc.
