@@ -7,6 +7,7 @@ import { Bold, Italic, List, ListOrdered, Heading1, Heading2, Heading3, Braces }
 import { useEffect, useCallback, useRef } from 'react';
 import { cn } from '../ui/Button';
 import { VariableNode } from './extensions/VariableNode';
+import { CustomOrderedList } from './extensions/CustomOrderedList';
 import { normalizeHierarchicalNumbering, toHierarchicalMarkdown } from '../../lib/transformer';
 
 interface RichTextEditorProps {
@@ -24,7 +25,9 @@ export const RichTextEditor = ({ content, onChange, onUndo, onRedo }: RichTextEd
         heading: {
           levels: [1, 2, 3],
         },
+        orderedList: false, // Usamos CustomOrderedList en su lugar
       }),
+      CustomOrderedList,
       Typography,
       VariableNode, // Nuestra nueva extensión
       Markdown.configure({

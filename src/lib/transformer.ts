@@ -129,11 +129,12 @@ function processHierarchicalLists(text: string): string {
     const match = line.match(/^(\s*)(\d+(?:\.\d+)*)(?:\.)?\s+(.*)$/);
 
     if (!match) {
-      if (line.trim() !== '' && !line.startsWith(' ')) {
+      const isBulletLine = /^\s*[-*+]\s/.test(line);
+      if (!isBulletLine && line.trim() !== '' && !line.startsWith(' ')) {
         counters.length = 0;
         lastLevel = 0;
       }
-      previousWasList = false;
+      previousWasList = isBulletLine ? previousWasList : false;
       resultLines.push(line);
       continue;
     }
@@ -179,21 +180,54 @@ function processHierarchicalLists(text: string): string {
  */
 export function normalizeHierarchicalNumbering(text: string): string {
     const lines = text.split('\n');
-    const converted = lines.map((line) => {
+    const result: string[] = [];
+
+    // Track what nesting levels have been opened so we can insert
+    // placeholder parents when a hierarchical number jumps levels.
+    // Key: depth (0-based), Value: last number emitted at that depth.
+    const emittedAtDepth: Map<number, number> = new Map();
+    let lastDepth = -1;
+
+    for (const line of lines) {
         const match = line.match(/^\s*(\d+(?:\.\d+)*)(?:\.)?\s+(.*)$/);
-        if (!match) return line;
+        if (!match) {
+            // Only reset tracking on heading lines (new sections).
+            // Regular text, bullets, arrows between numbered items should NOT
+            // clear context — they are body content within the same section.
+            if (/^#{1,6}\s/.test(line)) {
+                emittedAtDepth.clear();
+                lastDepth = -1;
+            }
+            result.push(line);
+            continue;
+        }
 
         const numbering = match[1];
         const content = match[2];
-        const parts = numbering.split('.');
-        const depth = parts.length;
+        const parts = numbering.split('.').map(p => Number.parseInt(p, 10));
+        const depth = parts.length; // 1-based depth
+
+        // For hierarchical numbers (depth > 1), we may need to emit
+        // placeholder parents for levels that haven't been opened yet.
+        if (depth > 1) {
+            for (let d = 1; d < depth; d++) {
+                if (!emittedAtDepth.has(d - 1)) {
+                    const parentNum = parts[d - 1] || 1;
+                    const parentIndent = ' '.repeat((d - 1) * 4);
+                    result.push(`${parentIndent}${parentNum}. \u200B`);
+                    emittedAtDepth.set(d - 1, parentNum);
+                }
+            }
+        }
+
         const indent = ' '.repeat((depth - 1) * 4);
         const lastNumber = parts[parts.length - 1];
+        result.push(`${indent}${lastNumber}. ${content}`);
+        emittedAtDepth.set(depth - 1, lastNumber);
+        lastDepth = depth - 1;
+    }
 
-        return `${indent}${lastNumber}. ${content}`;
-    });
-
-    return converted.join('\n');
+    return result.join('\n');
 }
 
 export function toHierarchicalMarkdown(text: string): string {
