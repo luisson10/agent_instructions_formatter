@@ -7,8 +7,11 @@ import { Bold, Italic, List, ListOrdered, Heading1, Heading2, Heading3, Braces }
 import { useEffect, useCallback, useRef } from 'react';
 import { cn } from '../ui/Button';
 import { VariableNode } from './extensions/VariableNode';
+import { LogicGateNode } from './extensions/LogicGateNode';
 import { CustomOrderedList } from './extensions/CustomOrderedList';
+import { SlashCommandExtension, SlashCommandMenu } from './extensions/SlashCommand';
 import { normalizeHierarchicalNumbering, toHierarchicalMarkdown } from '../../lib/transformer';
+import { LOGIC_GATE_KEYWORDS } from './extensions/logicGateKeywords';
 
 interface RichTextEditorProps {
   content: string;
@@ -29,7 +32,9 @@ export const RichTextEditor = ({ content, onChange, onUndo, onRedo }: RichTextEd
       }),
       CustomOrderedList,
       Typography,
-      VariableNode, // Nuestra nueva extensión
+      VariableNode,
+      LogicGateNode,
+      SlashCommandExtension,
       Markdown.configure({
         html: true,
         transformPastedText: true,
@@ -120,9 +125,17 @@ export const RichTextEditor = ({ content, onChange, onUndo, onRedo }: RichTextEd
         // Y dejamos que Tiptap parseHTML haga el resto.
         
         const normalizedForEditor = normalizeHierarchicalNumbering(normalizedIncoming);
-        const hydratedContent = normalizedForEditor.replace(
-            /{{\s*'\\\{\\\{(.+?)\\\}\\\}'\s*}}/g, 
+        // Hidratar variables: {{ '\{\{name\}\}' }} → <span data-type="variable-function">
+        let hydratedContent = normalizedForEditor.replace(
+            /{{\s*'\\\{\\\{(.+?)\\\}\\\}'\s*}}/g,
             (_, name) => `<span data-type="variable-function" name="${name}"></span>`
+        );
+        // Hidratar logic gates: keywords al inicio de línea/contenido → <span data-type="logic-gate">
+        const keywordPattern = LOGIC_GATE_KEYWORDS.map(k => k.keyword).join('|');
+        const logicGateRegex = new RegExp(`(?:^|(?<=\\n))(\\s*(?:\\d+(?:\\.\\d+)*\\.?\\s+)?)(${keywordPattern})\\b`, 'gm');
+        hydratedContent = hydratedContent.replace(
+            logicGateRegex,
+            (_, prefix, keyword) => `${prefix}<span data-type="logic-gate" data-keyword="${keyword}"></span>`
         );
 
         isApplyingExternalUpdate.current = true;
@@ -230,6 +243,9 @@ export const RichTextEditor = ({ content, onChange, onUndo, onRedo }: RichTextEd
       <div className="flex-1 overflow-auto cursor-text" onClick={() => editor.chain().focus().run()}>
         <EditorContent editor={editor} className="h-full" />
       </div>
+
+      {/* Slash Command Menu */}
+      <SlashCommandMenu editor={editor} />
     </div>
   );
 };
