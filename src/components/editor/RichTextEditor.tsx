@@ -130,12 +130,14 @@ export const RichTextEditor = ({ content, onChange, onUndo, onRedo }: RichTextEd
             /{{\s*'\\\{\\\{(.+?)\\\}\\\}'\s*}}/g,
             (_, name) => `<span data-type="variable-function" name="${name}"></span>`
         );
-        // Hidratar logic gates: keywords al inicio de línea/contenido → <span data-type="logic-gate">
+        // Hidratar logic gates: keywords como palabras standalone → <span data-type="logic-gate">
+        // Matchea keywords precedidos por whitespace/inicio y seguidos por whitespace/fin/puntuación.
+        // Esto evita matchear dentro de HTML attributes o nombres de variables.
         const keywordPattern = LOGIC_GATE_KEYWORDS.map(k => k.keyword).join('|');
-        const logicGateRegex = new RegExp(`(?:^|(?<=\\n))(\\s*(?:\\d+(?:\\.\\d+)*\\.?\\s+)?)(${keywordPattern})\\b`, 'gm');
+        const logicGateRegex = new RegExp(`(^|\\s)(${keywordPattern})(?=\\s|$|[,:.;!?)])`, 'gm');
         hydratedContent = hydratedContent.replace(
             logicGateRegex,
-            (_, prefix, keyword) => `${prefix}<span data-type="logic-gate" data-keyword="${keyword}"></span>`
+            (_, before, keyword) => `${before}<span data-type="logic-gate" data-keyword="${keyword}"></span>`
         );
 
         isApplyingExternalUpdate.current = true;
