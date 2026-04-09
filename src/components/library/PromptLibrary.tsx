@@ -11,8 +11,11 @@ import {
   Trash2,
   Pencil,
   RefreshCw,
+  Check,
+  Loader2,
 } from 'lucide-react';
 import { useLibraryStore } from '../../store/useLibraryStore';
+import { useAppStore } from '../../store/useAppStore';
 import { SavePromptDialog } from './SavePromptDialog';
 import type { Collection, Prompt } from '../../types/library';
 
@@ -68,13 +71,14 @@ function InlineName({
 }
 
 // ── Context menu (…) ────────────────────────────────────────────────────
-function ContextMenu({
-  onRename,
-  onDelete,
-}: {
-  onRename: () => void;
-  onDelete: () => void;
-}) {
+interface ContextMenuAction {
+  label: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+  danger?: boolean;
+}
+
+function ContextMenu({ actions }: { actions: ContextMenuAction[] }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -99,27 +103,22 @@ function ContextMenu({
         <MoreHorizontal className="w-4 h-4" />
       </button>
       {open && (
-        <div className="absolute right-0 top-6 bg-slate-800 border border-slate-700 rounded-md shadow-lg py-1 z-50 min-w-[120px]">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setOpen(false);
-              onRename();
-            }}
-            className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-700"
-          >
-            <Pencil className="w-3 h-3" /> Renombrar
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setOpen(false);
-              onDelete();
-            }}
-            className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-red-400 hover:bg-slate-700"
-          >
-            <Trash2 className="w-3 h-3" /> Eliminar
-          </button>
+        <div className="absolute right-0 top-6 bg-slate-800 border border-slate-700 rounded-md shadow-lg py-1 z-50 min-w-[140px]">
+          {actions.map((action, i) => (
+            <button
+              key={i}
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpen(false);
+                action.onClick();
+              }}
+              className={`flex items-center gap-2 w-full px-3 py-1.5 text-xs hover:bg-slate-700 ${
+                action.danger ? 'text-red-400' : 'text-slate-300'
+              }`}
+            >
+              {action.icon} {action.label}
+            </button>
+          ))}
         </div>
       )}
     </div>
@@ -168,8 +167,46 @@ function PromptRow({ prompt }: { prompt: Prompt }) {
         <span className="truncate flex-1 min-w-0">{prompt.name}</span>
       )}
       <ContextMenu
-        onRename={() => setRenaming(true)}
-        onDelete={() => deletePrompt(prompt.id)}
+        actions={[
+          { label: 'Renombrar', icon: <Pencil className="w-3 h-3" />, onClick: () => setRenaming(true) },
+          { label: 'Eliminar', icon: <Trash2 className="w-3 h-3" />, onClick: () => deletePrompt(prompt.id), danger: true },
+        ]}
+      />
+    </div>
+  );
+}
+
+// ── New prompt inline input ─────────────────────────────────────────────
+function NewPromptInput({ collectionId, onDone }: { collectionId: string; onDone: () => void }) {
+  const [name, setName] = useState('');
+  const { createPromptInCollection } = useLibraryStore();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  const handleSave = async () => {
+    if (name.trim()) {
+      await createPromptInCollection(collectionId, name.trim());
+    }
+    onDone();
+  };
+
+  return (
+    <div className="flex items-center gap-1.5 pl-8 pr-2 py-1">
+      <FileText className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+      <input
+        ref={inputRef}
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') handleSave();
+          if (e.key === 'Escape') onDone();
+        }}
+        onBlur={handleSave}
+        placeholder="Nombre del prompt"
+        className="bg-slate-800 border border-indigo-500 rounded px-1 py-0 text-sm text-slate-200 flex-1 min-w-0 placeholder:text-slate-600 focus:outline-none"
       />
     </div>
   );
@@ -187,6 +224,13 @@ function CollectionRow({ collection }: { collection: Collection }) {
 
   const isExpanded = expandedCollections.has(collection.id);
   const collectionPrompts = prompts[collection.id] ?? [];
+  const [creatingPrompt, setCreatingPrompt] = useState(false);
+
+  const handleNewPrompt = () => {
+    // Expand the collection first if collapsed
+    if (!isExpanded) toggleCollection(collection.id);
+    setCreatingPrompt(true);
+  };
 
   return (
     <div>
@@ -215,19 +259,22 @@ function CollectionRow({ collection }: { collection: Collection }) {
           </span>
         )}
         <ContextMenu
-          onRename={() => {
-            /* handled by double-click InlineName */
-          }}
-          onDelete={() => deleteCollection(collection.id)}
+          actions={[
+            { label: 'Nuevo prompt', icon: <Plus className="w-3 h-3" />, onClick: handleNewPrompt },
+            { label: 'Renombrar', icon: <Pencil className="w-3 h-3" />, onClick: () => { /* handled by double-click */ } },
+            { label: 'Eliminar', icon: <Trash2 className="w-3 h-3" />, onClick: () => deleteCollection(collection.id), danger: true },
+          ]}
         />
       </div>
 
       {isExpanded && (
         <div>
-          {collectionPrompts.length === 0 ? (
+          {collectionPrompts.map((p) => <PromptRow key={p.id} prompt={p} />)}
+          {creatingPrompt && (
+            <NewPromptInput collectionId={collection.id} onDone={() => setCreatingPrompt(false)} />
+          )}
+          {collectionPrompts.length === 0 && !creatingPrompt && (
             <div className="pl-10 py-1 text-xs text-slate-600 italic">Sin prompts</div>
-          ) : (
-            collectionPrompts.map((p) => <PromptRow key={p.id} prompt={p} />)
           )}
         </div>
       )}
@@ -279,8 +326,12 @@ export function PromptLibrary() {
     loading,
     error,
     activePromptId,
+    lastSavedContent,
+    saving,
     updatePrompt,
   } = useLibraryStore();
+
+  const markdown = useAppStore((s) => s.markdown);
 
   const [creatingCollection, setCreatingCollection] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
@@ -289,9 +340,14 @@ export function PromptLibrary() {
     fetchCollections();
   }, [fetchCollections]);
 
-  const handleUpdate = useCallback(() => {
+  const handleSave = useCallback(() => {
     if (activePromptId) updatePrompt(activePromptId);
   }, [activePromptId, updatePrompt]);
+
+  // Determine save button state
+  const hasActivePrompt = !!activePromptId;
+  const isDirty = hasActivePrompt && lastSavedContent !== null && markdown !== lastSavedContent;
+  const isSaved = hasActivePrompt && !isDirty && !saving;
 
   return (
     <div className="h-full flex flex-col bg-slate-950 border-r border-slate-800">
@@ -311,7 +367,7 @@ export function PromptLibrary() {
           <button
             onClick={() => setCreatingCollection(true)}
             className="p-1 rounded hover:bg-slate-800 text-slate-500 hover:text-slate-300 transition-colors"
-            title="Nueva colección"
+            title="Nueva coleccion"
           >
             <Plus className="w-3.5 h-3.5" />
           </button>
@@ -346,13 +402,34 @@ export function PromptLibrary() {
 
       {/* Footer */}
       <div className="relative border-t border-slate-800 p-2">
-        {activePromptId ? (
+        {hasActivePrompt ? (
           <button
-            onClick={handleUpdate}
-            className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+            onClick={handleSave}
+            disabled={isSaved || saving}
+            className={`w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+              saving
+                ? 'bg-indigo-700 text-indigo-200 cursor-wait'
+                : isSaved
+                  ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-default'
+                  : 'bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer'
+            }`}
           >
-            <Save className="w-3.5 h-3.5" />
-            Actualizar
+            {saving ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Guardando...
+              </>
+            ) : isSaved ? (
+              <>
+                <Check className="w-3.5 h-3.5" />
+                Guardado
+              </>
+            ) : (
+              <>
+                <Save className="w-3.5 h-3.5" />
+                Guardar
+              </>
+            )}
           </button>
         ) : (
           <button

@@ -12,6 +12,9 @@ interface LibraryState {
   // UI state
   sidebarOpen: boolean;
   activePromptId: string | null;
+  activeCollectionId: string | null;
+  lastSavedContent: string | null;
+  saving: boolean;
   loading: boolean;
   error: string | null;
 
@@ -24,6 +27,7 @@ interface LibraryState {
   renameCollection: (id: string, name: string) => Promise<void>;
   deleteCollection: (id: string) => Promise<void>;
 
+  createPromptInCollection: (collectionId: string, name: string) => Promise<void>;
   loadPrompt: (id: string) => Promise<void>;
   savePrompt: (collectionId: string, name: string) => Promise<void>;
   updatePrompt: (id: string) => Promise<void>;
@@ -41,6 +45,9 @@ export const useLibraryStore = create<LibraryState>()((set, get) => ({
 
   sidebarOpen: true,
   activePromptId: null,
+  activeCollectionId: null,
+  lastSavedContent: null,
+  saving: false,
   loading: false,
   error: null,
 
@@ -118,46 +125,74 @@ export const useLibraryStore = create<LibraryState>()((set, get) => ({
     }
   },
 
-  loadPrompt: async (id: string) => {
-    set({ loading: true, error: null });
-    try {
-      const { prompt } = await api.getPrompt(id);
-      const appStore = useAppStore.getState();
-      appStore.setMarkdown(prompt.content || '', true);
-      set({ activePromptId: id, loading: false });
-    } catch (e) {
-      set({ error: (e as Error).message, loading: false });
-    }
-  },
-
-  savePrompt: async (collectionId: string, name: string) => {
+  createPromptInCollection: async (collectionId: string, name: string) => {
     set({ error: null });
     try {
-      const { markdown, singleLine } = useAppStore.getState();
-      const { prompt } = await api.createPrompt(collectionId, name, markdown, singleLine);
-      set({ activePromptId: prompt.id });
+      const { prompt } = await api.createPrompt(collectionId, name, '', '');
+      // Load the new empty prompt into editors
+      const appStore = useAppStore.getState();
+      appStore.setMarkdown('', true);
+      set({
+        activePromptId: prompt.id,
+        activeCollectionId: collectionId,
+        lastSavedContent: '',
+      });
       await get().fetchPrompts(collectionId);
-      // Update collection count
       await get().fetchCollections();
     } catch (e) {
       set({ error: (e as Error).message });
     }
   },
 
+  loadPrompt: async (id: string) => {
+    set({ loading: true, error: null });
+    try {
+      const { prompt } = await api.getPrompt(id);
+      const appStore = useAppStore.getState();
+      appStore.setMarkdown(prompt.content || '', true);
+      set({
+        activePromptId: id,
+        activeCollectionId: prompt.collection_id,
+        lastSavedContent: prompt.content || '',
+        loading: false,
+      });
+    } catch (e) {
+      set({ error: (e as Error).message, loading: false });
+    }
+  },
+
+  savePrompt: async (collectionId: string, name: string) => {
+    set({ saving: true, error: null });
+    try {
+      const { markdown, singleLine } = useAppStore.getState();
+      const { prompt } = await api.createPrompt(collectionId, name, markdown, singleLine);
+      set({
+        activePromptId: prompt.id,
+        activeCollectionId: collectionId,
+        lastSavedContent: markdown,
+        saving: false,
+      });
+      await get().fetchPrompts(collectionId);
+      await get().fetchCollections();
+    } catch (e) {
+      set({ error: (e as Error).message, saving: false });
+    }
+  },
+
   updatePrompt: async (id: string) => {
-    set({ error: null });
+    set({ saving: true, error: null });
     try {
       const { markdown, singleLine } = useAppStore.getState();
       const { prompt } = await api.updatePrompt(id, {
         content: markdown,
         single_line: singleLine,
       });
-      // Refresh the collection's prompt list
+      set({ lastSavedContent: markdown, saving: false });
       if (prompt.collection_id) {
         await get().fetchPrompts(prompt.collection_id);
       }
     } catch (e) {
-      set({ error: (e as Error).message });
+      set({ error: (e as Error).message, saving: false });
     }
   },
 
