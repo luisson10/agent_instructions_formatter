@@ -142,7 +142,7 @@ export const SlashCommandExtension = Extension.create({
             return false;
           },
 
-          handleTextInput(view, from, _to, text) {
+          handleTextInput(view, _from, _to, text) {
             if (!active) return false;
 
             // After a character is typed, update filter
@@ -295,7 +295,8 @@ export const SlashCommandMenu: FC<SlashCommandMenuProps> = ({ editor }) => {
   useEffect(() => {
     if (!editor) return;
 
-    const storage = editor.storage.slashCommand as {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const storage = (editor.storage as any).slashCommand as {
       onSlashOpen: ((pos: number, coords: { left: number; bottom: number }) => void) | null;
       onSlashClose: (() => void) | null;
       onSlashUpdate: ((filter: string) => void) | null;

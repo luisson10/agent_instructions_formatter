@@ -186,7 +186,6 @@ export function normalizeHierarchicalNumbering(text: string): string {
     // placeholder parents when a hierarchical number jumps levels.
     // Key: depth (0-based), Value: last number emitted at that depth.
     const emittedAtDepth: Map<number, number> = new Map();
-    let lastDepth = -1;
 
     for (const line of lines) {
         const match = line.match(/^\s*(\d+(?:\.\d+)*)(?:\.)?\s+(.*)$/);
@@ -196,7 +195,6 @@ export function normalizeHierarchicalNumbering(text: string): string {
             // clear context — they are body content within the same section.
             if (/^#{1,6}\s/.test(line)) {
                 emittedAtDepth.clear();
-                lastDepth = -1;
             }
             result.push(line);
             continue;
@@ -224,7 +222,6 @@ export function normalizeHierarchicalNumbering(text: string): string {
         const lastNumber = parts[parts.length - 1];
         result.push(`${indent}${lastNumber}. ${content}`);
         emittedAtDepth.set(depth - 1, lastNumber);
-        lastDepth = depth - 1;
     }
 
     return result.join('\n');
