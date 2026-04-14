@@ -196,9 +196,9 @@ describe('Transformer Logic', () => {
       const lines = output.split('\n');
       // Should have placeholder parents + actual items
       expect(lines).toContain('3. \u200B');
-      expect(lines).toContain('    2. \u200B');
-      expect(lines).toContain('        2. Item A');
-      expect(lines).toContain('        3. Item B');
+      expect(lines).toContain('   2. \u200B');
+      expect(lines).toContain('      2. Item A');
+      expect(lines).toContain('      3. Item B');
     });
 
     it('does not emit placeholders when parents already exist', () => {
@@ -211,8 +211,8 @@ describe('Transformer Logic', () => {
       const lines = output.split('\n');
       expect(lines).toEqual([
         '1. Parent',
-        '    1. Child A',
-        '    2. Child B',
+        '   1. Child A',
+        '   2. Child B',
       ]);
     });
 
@@ -251,7 +251,7 @@ describe('Transformer Logic', () => {
       const output = normalizeHierarchicalNumbering(input);
       // Regular text should NOT cause placeholder re-emission
       expect(output).not.toContain('\u200B');
-      expect(output).toContain('        2. Next deep item');
+      expect(output).toContain('      2. Next deep item');
     });
 
     it('resets tracking on heading lines', () => {
@@ -283,11 +283,11 @@ describe('Transformer Logic', () => {
       expect(output).not.toContain('\u200B');
       // Correct indentation and numbering
       expect(lines[0]).toBe('3. Cálculo de entrega');
-      expect(lines[1]).toBe('    1. Paso uno');
-      expect(lines[2]).toBe('    2. Ajustes:');
-      expect(lines[3]).toBe('        1. Si condición A:');
-      expect(lines[7]).toBe('        2. Si condición B:');
-      expect(lines[9]).toBe('        3. Si condición C:');
+      expect(lines[1]).toBe('   1. Paso uno');
+      expect(lines[2]).toBe('   2. Ajustes:');
+      expect(lines[3]).toBe('      1. Si condición A:');
+      expect(lines[7]).toBe('      2. Si condición B:');
+      expect(lines[9]).toBe('      3. Si condición C:');
     });
   });
 

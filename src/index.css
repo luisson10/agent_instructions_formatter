@@ -18,7 +18,7 @@ body {
 .ProseMirror ol {
   counter-reset: section;
   list-style-type: none;
-  padding-left: 0;
+  padding-left: 3.5em; /* Espacio reservado para los números a la izquierda */
 }
 
 /* 2. Cada item incrementa el contador y muestra el número */
@@ -30,19 +30,15 @@ body {
 
 /* 3. El pseudo-elemento ::before muestra el contador acumulado (ej: 1.1.) */
 .ProseMirror ol > li::before {
-  content: counters(section, ".") ". ";
+  content: counters(section, ".") ".";
   position: absolute;
-  left: -1em; /* Ajuste visual para sacarlo un poco a la izquierda */
+  right: calc(100% + 0.5em); /* Alineado a la derecha, pegado al borde del contenido */
   font-weight: 600;
   color: #94a3b8; /* Slate 400 */
-  /* Importante: aseguramos que el ancho sea fijo para alineación */
-  min-width: 2em; 
-  text-align: right;
-  padding-right: 0.5em;
+  white-space: nowrap;
 }
 
 /* 4. Manejo del anidamiento */
-/* Cuando hay una lista DENTRO de un li, reseteamos un NUEVO contador para ese nivel */
 .ProseMirror li > ol {
   margin-top: 0.25em;
   margin-bottom: 0.25em;
@@ -50,7 +46,7 @@ body {
   counter-reset: section; /* Reiniciamos 'section' para el nuevo scope */
 }
 
-/* 5. Ajuste fino para el contenido del li para que no choque con el número */
+/* 5. Ajuste fino para el contenido del li */
 .ProseMirror li > p {
   display: inline-block;
   margin: 0;

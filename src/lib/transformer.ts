@@ -211,14 +211,14 @@ export function normalizeHierarchicalNumbering(text: string): string {
             for (let d = 1; d < depth; d++) {
                 if (!emittedAtDepth.has(d - 1)) {
                     const parentNum = parts[d - 1] || 1;
-                    const parentIndent = ' '.repeat((d - 1) * 4);
+                    const parentIndent = ' '.repeat((d - 1) * 3);
                     result.push(`${parentIndent}${parentNum}. \u200B`);
                     emittedAtDepth.set(d - 1, parentNum);
                 }
             }
         }
 
-        const indent = ' '.repeat((depth - 1) * 4);
+        const indent = ' '.repeat((depth - 1) * 3);
         const lastNumber = parts[parts.length - 1];
         result.push(`${indent}${lastNumber}. ${content}`);
         emittedAtDepth.set(depth - 1, lastNumber);
