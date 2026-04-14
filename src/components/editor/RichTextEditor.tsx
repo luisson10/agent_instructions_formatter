@@ -16,11 +16,9 @@ import { LOGIC_GATE_KEYWORDS } from './extensions/logicGateKeywords';
 interface RichTextEditorProps {
   content: string;
   onChange: (markdown: string) => void;
-  onUndo: () => void;
-  onRedo: () => void;
 }
 
-export const RichTextEditor = ({ content, onChange, onUndo, onRedo }: RichTextEditorProps) => {
+export const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
   const isApplyingExternalUpdate = useRef(false);
   const editor = useEditor({
     extensions: [
@@ -48,25 +46,8 @@ export const RichTextEditor = ({ content, onChange, onUndo, onRedo }: RichTextEd
       attributes: {
         class: 'prose prose-invert prose-slate prose-sm max-w-none focus:outline-none min-h-[500px] p-4',
       },
-      handleKeyDown: (_view, event) => {
-        const key = event.key.toLowerCase();
-        const isMod = event.metaKey || event.ctrlKey;
-
-        if (isMod && key === 'z') {
-          event.preventDefault();
-          if (event.shiftKey) onRedo();
-          else onUndo();
-          return true;
-        }
-
-        if (isMod && key === 'y') {
-          event.preventDefault();
-          onRedo();
-          return true;
-        }
-
-        return false;
-      },
+      // Ctrl+Z/Y lo maneja Tiptap nativamente (StarterKit history).
+      // Es granular por operación, no por snapshots de 600ms.
     },
     onUpdate: ({ editor }) => {
       if (isApplyingExternalUpdate.current) return;

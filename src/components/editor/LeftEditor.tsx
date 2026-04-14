@@ -64,12 +64,9 @@ export const LeftEditor = () => {
 
       {/* Área de Edición */}
       <div className="flex-1 overflow-hidden relative">
-        <RichTextEditor 
-          key={historyIndex} 
-          content={markdown} 
+        <RichTextEditor
+          content={markdown}
           onChange={handleVisualChange}
-          onUndo={undo}
-          onRedo={redo}
         />
       </div>
       
