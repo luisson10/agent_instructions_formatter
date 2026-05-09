@@ -36,28 +36,6 @@ export const RightEditor = () => {
        <div className="flex items-center justify-between p-2 border-b border-slate-800 bg-slate-900/50">
         <div className="flex items-center space-x-1">
           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider px-2">MÁQUINA (SINGLE LINE)</span>
-          
-          {/* Badge de Validación */}
-          {singleLine && (
-            <div className={cn(
-              "flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border",
-              validation.status === 'success' ? "bg-emerald-950/50 border-emerald-800 text-emerald-400" :
-              validation.status === 'warning' ? "bg-amber-950/50 border-amber-800 text-amber-400" :
-              "bg-red-950/50 border-red-800 text-red-400"
-            )}>
-              {validation.status === 'success' ? (
-                <>
-                  <ShieldCheck className="w-3 h-3" />
-                  <span>Válido</span>
-                </>
-              ) : (
-                <>
-                  <ShieldAlert className="w-3 h-3" />
-                  <span>{validation.status === 'error' ? 'Error' : 'Revisar'}</span>
-                </>
-              )}
-            </div>
-          )}
         </div>
 
         <div className="flex items-center space-x-2">
@@ -79,19 +57,34 @@ export const RightEditor = () => {
 
       {/* Configuración */}
       <div className="flex items-center gap-4 p-3 bg-slate-800/30 border-b border-slate-800">
-        <Toggle 
+        <Toggle
             id="opt-normalize"
-            checked={options.normalizeSpaces} 
-            onCheckedChange={(v) => setOption('normalizeSpaces', v)} 
+            checked={options.normalizeSpaces}
+            onCheckedChange={(v) => setOption('normalizeSpaces', v)}
             label="Normalizar Espacios"
         />
-        <Toggle 
-            id="opt-quotes"
-            checked={options.wrapInQuotes} 
-            onCheckedChange={(v) => setOption('wrapInQuotes', v)} 
-            label='Envolver en "' 
-        />
-        {/* Toggle de escape interno eliminado a petición. Asumimos siempre true o default del transformer. */}
+
+        {/* Badge de Validación */}
+        {singleLine && (
+          <div className={cn(
+            "ml-auto flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border",
+            validation.status === 'success' ? "bg-emerald-950/50 border-emerald-800 text-emerald-400" :
+            validation.status === 'warning' ? "bg-amber-950/50 border-amber-800 text-amber-400" :
+            "bg-red-950/50 border-red-800 text-red-400"
+          )}>
+            {validation.status === 'success' ? (
+              <>
+                <ShieldCheck className="w-3 h-3" />
+                <span>Válido</span>
+              </>
+            ) : (
+              <>
+                <ShieldAlert className="w-3 h-3" />
+                <span>{validation.status === 'error' ? 'Error' : 'Revisar'}</span>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Mensaje de Error/Warning Detallado */}

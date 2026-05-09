@@ -43,7 +43,7 @@ export const LogicGateNode = Node.create({
       markdown: {
         serialize(state: any, node: any) {
           const keyword = node.attrs.keyword;
-          state.write(keyword);
+          state.write(`[${keyword}]`);
         },
       },
     };
